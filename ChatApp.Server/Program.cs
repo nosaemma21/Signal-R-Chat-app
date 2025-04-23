@@ -14,6 +14,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddSignalR();
 
 builder.Services.AddDbContext<AppDbContext>();
+builder.Services.AddControllers();
 
 builder
     .Services.AddIdentityCore<IdentityUser>()
@@ -83,7 +84,10 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors("CorsPolicy");
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseHttpsRedirection();
 app.MapHub<ChatHub>("/chatHub");
+app.MapControllers();
 
 app.Run();

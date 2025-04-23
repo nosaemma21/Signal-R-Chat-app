@@ -3768,39 +3768,83 @@ process.umask = function() { return 0; };
 
 },{}],28:[function(require,module,exports){
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 const signalR = require("@microsoft/signalr");
 const txtUsername = document.getElementById("txtUsername");
 const txtMessage = document.getElementById("txtMessage");
 const btnSend = document.getElementById("btnSend");
-const connection = new signalR.HubConnectionBuilder()
-    .withUrl("https://localhost:7097/chatHub")
-    .build();
-connection.on("ReceiveMessage", (username, message) => {
-    const li = document.createElement("li");
-    li.textContent = `${username}: ${message}`;
-    const messageList = document.getElementById("messages");
-    messageList.appendChild(li);
-    messageList.scrollTop = messageList.scrollHeight;
-});
-connection
-    .start()
-    .then(() => (btnSend.disabled = false))
-    .catch((err) => console.error(err.toString()))
-    .then(() => (txtMessage.value = ""));
+const btnLogin = document.getElementById("btnLogin");
+const divChat = document.getElementById("divChat");
+const txtPassword = document.getElementById("txtPassword");
+const lblUsername = document.getElementById("lblUsername");
+const divLogin = document.getElementById("divLogin");
+divChat.style.display = "none";
+btnSend.disabled = true;
+btnLogin.addEventListener("click", login);
+let connection = null;
+function login() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const username = txtUsername.value;
+        const password = txtPassword.value;
+        if (username && password) {
+            try {
+                // Use the Fetch API to login
+                const response = yield fetch("https://localhost:7097/account/login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ username, password }),
+                });
+                const json = yield response.json();
+                localStorage.setItem("token", json.token);
+                localStorage.setItem("username", username);
+                txtUsername.value = "";
+                txtPassword.value = "";
+                lblUsername.textContent = username;
+                divLogin.style.display = "none";
+                divChat.style.display = "block";
+                txtMessage.focus();
+                connection = new signalR.HubConnectionBuilder()
+                    .withUrl("https://localhost:7097/chatHub", {
+                    accessTokenFactory: () => {
+                        var localToken = localStorage.getItem("token");
+                        return localToken;
+                    },
+                })
+                    .build();
+                connection.on("ReceiveMessage", (username, message) => {
+                    const li = document.createElement("li");
+                    li.textContent = `${username}: ${message}`;
+                    const messageList = document.getElementById("messages");
+                    messageList.appendChild(li);
+                    messageList.scrollTop = messageList.scrollHeight;
+                });
+                yield connection.start();
+                btnSend.disabled = false;
+            }
+            catch (err) {
+                console.error(err.toString());
+            }
+        }
+    });
+}
 txtMessage.addEventListener("keyup", (event) => {
-    if (event.key == "Enter") {
+    if (event.key === "Enter") {
         sendMessage();
     }
 });
 btnSend.addEventListener("click", sendMessage);
 function sendMessage() {
-    if (connection.state !== signalR.HubConnectionState.Connected) {
-        console.warn("SignalR is not connected yet!");
-        return;
-    }
     connection
-        .invoke("SendMessage", txtUsername.value, txtMessage.value)
+        .invoke("SendMessage", lblUsername.textContent, txtMessage.value)
         .catch((err) => console.error(err.toString()))
         .then(() => (txtMessage.value = ""));
 }

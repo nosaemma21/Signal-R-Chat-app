@@ -1,20 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
- <meta charset="UTF-8">
- <meta name="viewport" content="width=device-width, initial-scale=1.0">
- <title>Document</title>
-</head>
-<body>
- <div id="divChat">
-  <label for="txtUsername">User Name</label>
-  <input type="text" id="txtUsername" />
-  <label for="txtMessage">Message</label>
-  <input type="text" id="txtMessage" />
-  <button id="btnSend">Send</button>
-  <ul id="messages"></ul>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <div>
+      <div id="divLogin">
+        <label for="txtUsername">User Name</label>
+        <input type="text" id="txtUsername" />
+        <label for="txtPassword">Password</label>
+        <input type="password" id="txtPassword" />
+        <button id="btnLogin">Login</button>
+      </div>
+    </div>
 
-  <script src="../dist/bundle.js"></script>
-</div>
-</body>
+    <div id="divChat">
+      <label>User Name</label>
+      <label id="lblUsername"></label>
+      <label for="txtMessage">Message</label>
+      <input type="text" id="txtMessage" />
+      <button id="btnSend">Send</button>
+      <ul id="messages"></ul>
+    </div>
+    <script type="module" src="../dist/bundle.js"></script>
+  </body>
 </html>
