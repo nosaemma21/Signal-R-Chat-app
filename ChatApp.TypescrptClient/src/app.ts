@@ -31,12 +31,61 @@ const lblUsername: HTMLLabelElement = document.getElementById(
 const divLogin: HTMLDivElement = document.getElementById(
   "divLogin"
 ) as HTMLDivElement;
+const txtToUser: HTMLInputElement = document.getElementById(
+  "txtToUser"
+) as HTMLInputElement;
+
+const txtToGroup: HTMLInputElement = document.getElementById(
+  "txtToGroup"
+) as HTMLInputElement;
+
+const btnJoinGroup: HTMLButtonElement = document.getElementById(
+  "btnJoinGroup"
+) as HTMLButtonElement;
+
+const btnLeaveGroup: HTMLButtonElement = document.getElementById(
+  "btnLeaveGroup"
+) as HTMLButtonElement;
 
 divChat.style.display = "none";
 btnSend.disabled = true;
 
 btnLogin.addEventListener("click", login);
 let connection: signalR.HubConnection = null;
+
+function joinGroup() {
+  if (txtToGroup.value) {
+    connection
+      .invoke("AddToGroup", lblUsername.textContent, txtToGroup.value)
+      .catch((err) => console.error(err.toString()))
+      .then(() => {
+        btnJoinGroup.disabled = true;
+        btnJoinGroup.style.display = "none";
+        btnLeaveGroup.disabled = false;
+        btnLeaveGroup.style.display = "inline";
+        txtToGroup.readOnly = true;
+      });
+  }
+}
+
+function leaveGroup() {
+  if (txtToGroup.value) {
+    connection
+      .invoke("RemoveFromGroup", lblUsername.textContent, txtToGroup.value)
+      .catch((err) => console.error(err.toString()))
+      .then(() => {
+        btnJoinGroup.disabled = false;
+        btnJoinGroup.style.display = "inline";
+        btnLeaveGroup.disabled = true;
+        btnLeaveGroup.style.display = "none";
+        txtToGroup.readOnly = false;
+      });
+  }
+}
+
+btnJoinGroup.addEventListener("click", joinGroup);
+btnLeaveGroup.addEventListener("click", leaveGroup);
+
 async function login() {
   const username = txtUsername.value;
   const password = txtPassword.value;
@@ -74,6 +123,23 @@ async function login() {
         messageList.appendChild(li);
         messageList.scrollTop = messageList.scrollHeight;
       });
+
+      connection.on("UserConnected", (username: string) => {
+        const li = document.createElement("li");
+        li.textContent = `${username} connected`;
+        const messageList = document.getElementById("messages");
+        messageList.appendChild(li);
+        messageList.scrollTop = messageList.scrollHeight;
+      });
+
+      connection.on("UserDisconnected", (username: string) => {
+        const li = document.createElement("li");
+        li.textContent = `${username} disconnected`;
+        const messageList = document.getElementById("messages");
+        messageList.appendChild(li);
+        messageList.scrollTop = messageList.scrollHeight;
+      });
+
       await connection.start();
       btnSend.disabled = false;
     } catch (err) {
@@ -92,4 +158,31 @@ function sendMessage() {
     .invoke("SendMessage", lblUsername.textContent, txtMessage.value)
     .catch((err) => console.error(err.toString()))
     .then(() => (txtMessage.value = ""));
+
+  if (txtToGroup.value && txtToGroup.readOnly === true) {
+    connection
+      .invoke(
+        "SendMessageToGroup",
+        lblUsername.textContent,
+        txtToGroup.value,
+        txtMessage.value
+      )
+      .catch((err) => console.error(err.toString()))
+      .then(() => (txtMessage.value = ""));
+  } else if (txtToUser.value) {
+    connection
+      .invoke(
+        "SendMessageToUser",
+        lblUsername.textContent,
+        txtToUser.value,
+        txtMessage.value
+      )
+      .catch((err) => console.error(err.toString()))
+      .then(() => txtMessage.value == "");
+  } else {
+    connection
+      .invoke("SendMessage", lblUsername.textContent, txtMessage.value)
+      .catch((err) => console.error(err.toString()))
+      .then(() => (txtMessage.value = ""));
+  }
 }

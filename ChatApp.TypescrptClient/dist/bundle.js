@@ -3787,6 +3787,7 @@ const divChat = document.getElementById("divChat");
 const txtPassword = document.getElementById("txtPassword");
 const lblUsername = document.getElementById("lblUsername");
 const divLogin = document.getElementById("divLogin");
+const txtToUser = document.getElementById("txtToUser");
 divChat.style.display = "none";
 btnSend.disabled = true;
 btnLogin.addEventListener("click", login);
@@ -3827,6 +3828,20 @@ function login() {
                     messageList.appendChild(li);
                     messageList.scrollTop = messageList.scrollHeight;
                 });
+                connection.on("UserConnected", (username) => {
+                    const li = document.createElement("li");
+                    li.textContent = `${username} connected`;
+                    const messageList = document.getElementById("messages");
+                    messageList.appendChild(li);
+                    messageList.scrollTop = messageList.scrollHeight;
+                });
+                connection.on("UserDisconnected", (username) => {
+                    const li = document.createElement("li");
+                    li.textContent = `${username} disconnected`;
+                    const messageList = document.getElementById("messages");
+                    messageList.appendChild(li);
+                    messageList.scrollTop = messageList.scrollHeight;
+                });
                 yield connection.start();
                 btnSend.disabled = false;
             }
@@ -3847,6 +3862,18 @@ function sendMessage() {
         .invoke("SendMessage", lblUsername.textContent, txtMessage.value)
         .catch((err) => console.error(err.toString()))
         .then(() => (txtMessage.value = ""));
+    if (txtToUser.value) {
+        connection
+            .invoke("SendMessageToUser", lblUsername.textContent, txtToUser.value, txtMessage.value)
+            .catch((err) => console.error(err.toString()))
+            .then(() => txtMessage.value == "");
+    }
+    else {
+        connection
+            .invoke("SendMessage", lblUsername.textContent, txtMessage.value)
+            .catch((err) => console.error(err.toString()))
+            .then(() => (txtMessage.value = ""));
+    }
 }
 
 },{"@microsoft/signalr":26}]},{},[28])
