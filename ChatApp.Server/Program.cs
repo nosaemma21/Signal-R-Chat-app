@@ -4,6 +4,7 @@ using ChatApp.Server.Hubs;
 using ChatApp.Server.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Cors.Infrastructure;
+using Microsoft.AspNetCore.Http.Connections;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.IdentityModel.Tokens;
@@ -11,7 +12,22 @@ using Microsoft.IdentityModel.Tokens;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddOpenApi();
-builder.Services.AddSignalR();
+builder.Services.AddSignalR(o =>
+{
+    o.KeepAliveInterval = TimeSpan.FromSeconds(10);
+    o.ClientTimeoutInterval = TimeSpan.FromSeconds(20);
+    o.EnableDetailedErrors = true;
+    o.StatefulReconnectBufferSize = 2000000;
+});
+
+builder
+    .Services.AddSignalR()
+    .AddHubOptions<ChatHub>(o =>
+    {
+        o.KeepAliveInterval = TimeSpan.FromSeconds(10);
+        o.ClientTimeoutInterval = TimeSpan.FromSeconds(20);
+        o.EnableDetailedErrors = true;
+    });
 
 builder.Services.AddDbContext<AppDbContext>();
 builder.Services.AddControllers();
@@ -87,7 +103,16 @@ app.UseCors("CorsPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseHttpsRedirection();
-app.MapHub<ChatHub>("/chatHub");
+app.MapHub<ChatHub>(
+    "/chatHub",
+    o =>
+    {
+        o.Transports = HttpTransportType.WebSockets | HttpTransportType.LongPolling;
+        o.WebSockets.CloseTimeout = TimeSpan.FromSeconds(10);
+        o.LongPolling.PollTimeout = TimeSpan.FromSeconds(120);
+        o.AllowStatefulReconnects = true;
+    }
+);
 app.MapControllers();
 
 app.Run();

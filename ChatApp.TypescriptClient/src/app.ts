@@ -47,6 +47,10 @@ const btnLeaveGroup: HTMLButtonElement = document.getElementById(
   "btnLeaveGroup"
 ) as HTMLButtonElement;
 
+const lblStatus: HTMLLabelElement = document.getElementById(
+  "lblStatus"
+) as HTMLLabelElement;
+
 divChat.style.display = "none";
 btnSend.disabled = true;
 
@@ -114,8 +118,31 @@ async function login() {
 
             return localToken;
           },
+          transport:
+            signalR.HttpTransportType.WebSockets |
+            signalR.HttpTransportType.LongPolling,
         })
+        .withAutomaticReconnect([0, 5, 20])
+        .withStatefulReconnect({ bufferSize: 200000 })
         .build();
+
+      connection.onclose(() => {
+        lblStatus.textContent = "Disconnected";
+      });
+
+      connection.onreconnecting((error) => {
+        lblStatus.textContent = `${error} Reconnecting...`;
+      });
+
+      connection.onreconnected((connectionId) => {
+        lblStatus.textContent = `Connected ${connectionId}`;
+      });
+      await connection.start();
+      lblStatus.textContent = `Connected. ${connection.connectionId}`;
+
+      connection.keepAliveIntervalInMilliseconds = 10000;
+      connection.serverTimeoutInMilliseconds = 20000;
+
       connection.on("ReceiveMessage", (username: string, message: string) => {
         const li = document.createElement("li");
         li.textContent = `${username}: ${message}`;
